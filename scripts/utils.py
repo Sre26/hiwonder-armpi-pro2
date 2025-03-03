@@ -279,3 +279,237 @@ def near_zero(arr: np.ndarray) -> np.ndarray:
     """
     tol = 1e-6
     return np.where(np.isclose(arr, 0, atol=tol), 0, arr)
+
+class FiveDOFRobot:
+    """
+    A class to represent a 5-DOF robotic arm with kinematics calculations, including
+    forward kinematics, inverse kinematics, velocity kinematics, and Jacobian computation.
+
+    Attributes:
+        l1, l2, l3, l4, l5: Link lengths of the robotic arm.
+        theta: List of joint angles in radians.
+        theta_limits: Joint limits for each joint.
+        ee: End-effector object for storing the position and orientation of the end-effector.
+        num_dof: Number of degrees of freedom (5 in this case).
+        points: List storing the positions of the robot joints.
+        DH: Denavit-Hartenberg parameters for each joint.
+        T: Transformation matrices for each joint.
+    """
+    
+    def __init__(self):
+        """Initialize the robot parameters and joint limits."""
+        # Link lengths
+        self.l1, self.l2, self.l3, self.l4, self.l5 = 0.155, 0.099, 0.095, 0.055, 0.105
+        
+        # Joint angles (initialized to zero)
+        self.theta = [0, 0, 0, 0, 0]
+        
+        # Joint limits (in radians)
+        self.theta_limits = [
+            [-np.pi, np.pi], 
+            [-np.pi/3, np.pi], 
+            [-np.pi+np.pi/12, np.pi-np.pi/4], 
+            [-np.pi+np.pi/12, np.pi-np.pi/12], 
+            [-np.pi, np.pi]
+        ]
+        
+        # End-effector object
+        self.ee = EndEffector()
+        
+        # Robot's points
+        self.num_dof = 5
+        self.points = [None] * (self.num_dof + 1)
+
+        # Denavit-Hartenberg parameters and transformation matrices
+        self.DH = [
+            [self.theta[0],       self.l1,            0,          PI/2],  # 0H1
+            [self.theta[1]+PI/2,  0,                  self.l2,    PI],    # 1H2
+            [self.theta[2],       0,                  self.l3,    PI],    # 2H3
+            [self.theta[3]+PI/2,  0,                  0,          PI/2],  # 3H4
+            [self.theta[4],       self.l4 + self.l5,  0,          0,],    # 4H5
+        ]
+        
+        # container for successive transformation matrices (ie 2H3, 3H4, ...)
+        self.T = np.stack(
+            [
+                dh_to_matrix([self.theta[0],       self.l1,            0,          PI/2]),  # 0H1
+                dh_to_matrix([self.theta[1]+PI/2,  0,                  self.l2,    PI]),    # 1H2
+                dh_to_matrix([self.theta[2],       0,                  self.l3,    PI]),    # 2H3
+                dh_to_matrix([self.theta[3]+PI/2,  0,                  0,          PI/2]),  # 3H4
+                dh_to_matrix([self.theta[4],       self.l4 + self.l5,  0,          0,]),    # 4H5
+
+            ], axis=0)
+
+    
+    def calc_forward_kinematics(self, theta: list, radians=False):
+        """
+        Calculate forward kinematics based on the provided joint angles.
+        
+        Args:
+            theta: List of joint angles (in degrees or radians).
+            radians: Boolean flag to indicate if input angles are in radians.
+        """
+        # update transformaiton matrices to use the thetas in args
+
+        # check that theta values are in radians
+        theta = np.array(theta)
+        if radians == False:
+            # if values arent in radians, then convert
+            theta = theta * PI/180
+
+        # update transformation matrices with the new theta vals
+        self.T[0, :, :] = dh_to_matrix([theta[0],       self.l1,            0,          PI/2])  # 0H1
+        self.T[1, :, :] = dh_to_matrix([theta[1]+PI/2,  0,                  self.l2,    PI])    # 1H2
+        self.T[2, :, :] = dh_to_matrix([theta[2],       0,                  self.l3,    PI])    # 2H3
+        self.T[3, :, :] = dh_to_matrix([theta[3]+PI/2,  0,                  0,          PI/2])  # 3H4
+        self.T[4, :, :] = dh_to_matrix([theta[4],       self.l4 + self.l5,  0,          0,])    # 4H5
+
+        # Calculate robot points (positions of joints)
+        self.calc_robot_points()
+
+
+    def calc_inverse_kinematics(self, EE: EndEffector, soln=0):
+        """
+        Calculate inverse kinematics to determine the joint angles based on end-effector position.
+        
+        Args:
+            EE: EndEffector object containing desired position and orientation.
+            soln: Optional parameter for multiple solutions (not implemented).
+        """
+        ########################################
+
+        # insert your code here
+
+        ########################################
+
+
+    def calc_numerical_ik(self, EE: EndEffector, tol=0.01, ilimit=50):
+        """ Calculate numerical inverse kinematics based on input coordinates. """
+        
+        ########################################
+
+        # insert your code here
+
+        ########################################
+        self.calc_forward_kinematics(self.theta, radians=True)
+
+    
+    def calc_velocity_kinematics(self, vel: list):
+        """
+        Calculate the joint velocities required to achieve the given end-effector velocity.
+        
+        Args:
+            vel: Desired end-effector velocity (3x1 vector).
+        """
+        # calculate the jacobian for the desired EE velocity
+        Jacobian_v = self.make_Jacobian_v(vel)
+        
+        time_step = 0.01    # choose arbitrary timestep fro RRMC
+
+        # calc angular velocities for joints
+        inv_Jv = np.linalg.pinv(Jacobian_v)
+        theta_dot = inv_Jv @ vel
+
+        # update self.theta
+        self.theta = self.theta + (time_step * theta_dot)
+
+        # Recompute robot points based on updated joint angles
+        self.calc_forward_kinematics(self.theta, radians=True)
+
+    def calc_robot_points(self):
+        """ Calculates the main arm points using the current joint angles """
+
+        # Initialize points[0] to the base (origin)
+        self.points[0] = np.array([0, 0, 0, 1])
+
+        # Precompute cumulative transformations to avoid redundant calculations
+        T_cumulative = [np.eye(4)]
+        for i in range(self.num_dof):
+            T_cumulative.append(T_cumulative[-1] @ self.T[i])
+
+        # Calculate the robot points by applying the cumulative transformations
+        for i in range(1, 6):
+            self.points[i] = T_cumulative[i] @ self.points[0]
+
+        # Calculate EE position and rotation
+        self.EE_axes = T_cumulative[-1] @ np.array([0.075, 0.075, 0.075, 1])  # End-effector axes
+        self.T_ee = T_cumulative[-1]  # Final transformation matrix for EE
+
+        # Set the end effector (EE) position
+        self.ee.x, self.ee.y, self.ee.z = self.points[-1][:3]
+        
+        # Extract and assign the RPY (roll, pitch, yaw) from the rotation matrix
+        rpy = rotm_to_euler(self.T_ee[:3, :3])
+        self.ee.rotx, self.ee.roty, self.ee.rotz = rpy[2], rpy[1], rpy[0]
+
+        # Calculate the EE axes in space (in the base frame)
+        self.EE = [self.ee.x, self.ee.y, self.ee.z]
+        self.EE_axes = np.array([self.T_ee[:3, i] * 0.075 + self.points[-1][:3] for i in range(3)])
+
+    def make_Jacobian_v(self, vel: list):
+        """ 
+        Computes the linear component of the Jacobian, Jacobian_v, via
+        the geometric approach. 
+        
+        This is/can be used for J_inv @ vel = theta_dot where theta_dot are 
+        the joint velocities corresponding to vel, the desired EE velocity.
+
+        Args:
+            vel: Desired end-effector velocity (3x1 vector).
+        Returns:
+            Jacobian_v: the linear component of the Jacobian (3x5 matrix)
+        """
+        # -----------------------------------------------------
+        # PROCESS: the geometric process for calculating the  
+        # linear component of the jacobian is as follows:
+
+        # vel_EE = Jacobian_v @ theta_dot
+        # vel_EE = x_dot, y_dot, z_dot (dot indicates time deriv.)
+        # theta_dot is a vector of the time deriv. of each theta
+
+        # Jacobian_v = z_vec X r_vec (cross product)
+        
+        # z_vec is the z axis of the current joint in reference
+        # to Frame 0
+        # (z_vec calculated as z_0 @ R_0i, where z_0 is the z_axis at 
+        # frame 0 and R_0i is the rotation matrix from frame 0 to 
+        # frame i, extracted from the HTM 0Hi)
+
+        # r_vec is the distance from the current joint to the EE
+        # (r_vec calculated as r_EE - r_i, where r_EE is the dist. from
+        # joint 1 to the EE, and r_i is the dist from joint 1 to joint i)
+        # -----------------------------------------------------
+
+       # compute the cumulative transformation matrix
+        cum_htm = [np.eye(4)]
+        for i in range(self.num_dof):
+            cum_htm.append(cum_htm[-1] @ self.T[i, :, :])
+
+        # radius from base (Frame 0) to EE (Frame 5 in this case)
+        r_EE = cum_htm[-1][0:3, 3]
+
+        # get z vectors from the cumulative transformation matrices
+        # the z vectors are the third colum of the rotation matrices
+        z_vec = np.zeros((3, self.num_dof))
+        for j in range(self.num_dof):
+            z_vec[:, j] = cum_htm[j][0:3, 2].T
+
+        # make an array of r_vectors
+        # zero array to store distance (3x1 vector) for each cumulative radius (ie 0-5, 1-5, ...) 
+        r_vec = np.zeros((3, self.num_dof))
+
+        r_vec[:, 0] = r_EE
+        for k in range(self.num_dof):
+            # compute new r vector (ex r1-5, r2-5, ...) as r_EE - r0-i 
+            # extract r0-i from the fourth column of the cumulative htm matrices
+            r_vec[:, k] = (r_EE - cum_htm[k][0:3, 3])
+
+        # calculate the Jacobian terms
+        # container for the linear velocity component of the Jacobian 
+        J_v = np.zeros((3, self.num_dof))
+
+        for i1 in range(self.num_dof):
+            # column of J = z x r (cross product)
+            J_v[:, i1] = np.cross(z_vec[:, i1], r_vec[:, i1])
+        
+        return J_v

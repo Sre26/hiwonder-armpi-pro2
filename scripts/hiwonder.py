@@ -10,6 +10,7 @@ import numpy as np
 from board_controller import BoardController
 from servo_bus_controller import ServoBusController
 import utils as ut
+from utils import FiveDOFRobot
 
 # Robot base constants
 WHEEL_RADIUS = 0.047  # meters
@@ -21,6 +22,7 @@ class HiwonderRobot:
         """Initialize motor controllers, servo bus, and default robot states."""
         self.board = BoardController()
         self.servo_bus = ServoBusController()
+        self.fivedof = FiveDOFRobot()
 
         self.joint_values = [0, 0, 90, -30, 0, 0]  # degrees
         self.home_position = [0, 0, 90, -30, 0, 0]  # degrees

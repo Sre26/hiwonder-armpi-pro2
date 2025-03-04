@@ -358,40 +358,15 @@ class FiveDOFRobot:
             theta = theta * PI/180
 
         # update transformation matrices with the new theta vals
-        self.T[0, :, :] = dh_to_matrix([theta[0],       self.l1,            0,          PI/2])  # 0H1
-        self.T[1, :, :] = dh_to_matrix([theta[1]+PI/2,  0,                  self.l2,    PI])    # 1H2
-        self.T[2, :, :] = dh_to_matrix([theta[2],       0,                  self.l3,    PI])    # 2H3
-        self.T[3, :, :] = dh_to_matrix([theta[3]+PI/2,  0,                  0,          PI/2])  # 3H4
+        self.T[0, :, :] = dh_to_matrix([theta[0],       self.l1,            0,          180/2])  # 0H1
+        self.T[1, :, :] = dh_to_matrix([theta[1]+180/2,  0,                  self.l2,    180])    # 1H2
+        self.T[2, :, :] = dh_to_matrix([theta[2],       0,                  self.l3,    180])    # 2H3
+        self.T[3, :, :] = dh_to_matrix([theta[3]+180/2,  0,                  0,          180/2])  # 3H4
         self.T[4, :, :] = dh_to_matrix([theta[4],       self.l4 + self.l5,  0,          0,])    # 4H5
 
         # Calculate robot points (positions of joints)
         self.calc_robot_points()
 
-
-    def calc_inverse_kinematics(self, EE: EndEffector, soln=0):
-        """
-        Calculate inverse kinematics to determine the joint angles based on end-effector position.
-        
-        Args:
-            EE: EndEffector object containing desired position and orientation.
-            soln: Optional parameter for multiple solutions (not implemented).
-        """
-        ########################################
-
-        # insert your code here
-
-        ########################################
-
-
-    def calc_numerical_ik(self, EE: EndEffector, tol=0.01, ilimit=50):
-        """ Calculate numerical inverse kinematics based on input coordinates. """
-        
-        ########################################
-
-        # insert your code here
-
-        ########################################
-        self.calc_forward_kinematics(self.theta, radians=True)
 
     
     def calc_velocity_kinematics(self, vel: list):
@@ -416,36 +391,7 @@ class FiveDOFRobot:
         # Recompute robot points based on updated joint angles
         self.calc_forward_kinematics(self.theta, radians=True)
 
-    def calc_robot_points(self):
-        """ Calculates the main arm points using the current joint angles """
-
-        # Initialize points[0] to the base (origin)
-        self.points[0] = np.array([0, 0, 0, 1])
-
-        # Precompute cumulative transformations to avoid redundant calculations
-        T_cumulative = [np.eye(4)]
-        for i in range(self.num_dof):
-            T_cumulative.append(T_cumulative[-1] @ self.T[i])
-
-        # Calculate the robot points by applying the cumulative transformations
-        for i in range(1, 6):
-            self.points[i] = T_cumulative[i] @ self.points[0]
-
-        # Calculate EE position and rotation
-        self.EE_axes = T_cumulative[-1] @ np.array([0.075, 0.075, 0.075, 1])  # End-effector axes
-        self.T_ee = T_cumulative[-1]  # Final transformation matrix for EE
-
-        # Set the end effector (EE) position
-        self.ee.x, self.ee.y, self.ee.z = self.points[-1][:3]
-        
-        # Extract and assign the RPY (roll, pitch, yaw) from the rotation matrix
-        rpy = rotm_to_euler(self.T_ee[:3, :3])
-        self.ee.rotx, self.ee.roty, self.ee.rotz = rpy[2], rpy[1], rpy[0]
-
-        # Calculate the EE axes in space (in the base frame)
-        self.EE = [self.ee.x, self.ee.y, self.ee.z]
-        self.EE_axes = np.array([self.T_ee[:3, i] * 0.075 + self.points[-1][:3] for i in range(3)])
-
+    
     def make_Jacobian_v(self, vel: list):
         """ 
         Computes the linear component of the Jacobian, Jacobian_v, via

@@ -322,20 +322,20 @@ class FiveDOFRobot:
 
         # Denavit-Hartenberg parameters and transformation matrices
         self.DH = [
-            [self.theta[0],       self.l1,            0,          PI/2],  # 0H1
-            [self.theta[1]+PI/2,  0,                  self.l2,    PI],    # 1H2
-            [self.theta[2],       0,                  self.l3,    PI],    # 2H3
-            [self.theta[3]+PI/2,  0,                  0,          PI/2],  # 3H4
+            [self.theta[0],       self.l1,            0,          180/2],  # 0H1
+            [self.theta[1]+180/2,  0,                  self.l2,    180],    # 1H2
+            [self.theta[2],       0,                  self.l3,    180],    # 2H3
+            [self.theta[3]+180/2,  0,                  0,          180/2],  # 3H4
             [self.theta[4],       self.l4 + self.l5,  0,          0,],    # 4H5
         ]
         
         # container for successive transformation matrices (ie 2H3, 3H4, ...)
         self.T = np.stack(
             [
-                dh_to_matrix([self.theta[0],       self.l1,            0,          PI/2]),  # 0H1
-                dh_to_matrix([self.theta[1]+PI/2,  0,                  self.l2,    PI]),    # 1H2
-                dh_to_matrix([self.theta[2],       0,                  self.l3,    PI]),    # 2H3
-                dh_to_matrix([self.theta[3]+PI/2,  0,                  0,          PI/2]),  # 3H4
+                dh_to_matrix([self.theta[0],       self.l1,            0,          180/2]),  # 0H1
+                dh_to_matrix([self.theta[1]+180/2,  0,                  self.l2,    180]),    # 1H2
+                dh_to_matrix([self.theta[2],       0,                  self.l3,    180]),    # 2H3
+                dh_to_matrix([self.theta[3]+180/2,  0,                  0,          180/2]),  # 3H4
                 dh_to_matrix([self.theta[4],       self.l4 + self.l5,  0,          0,]),    # 4H5
 
             ], axis=0)
@@ -389,7 +389,7 @@ class FiveDOFRobot:
         self.theta = self.theta + (time_step * theta_dot)
 
         # Recompute robot points based on updated joint angles
-        self.calc_forward_kinematics(self.theta, radians=True)
+        self.calc_forward_kinematics(self.theta, radians=False)
 
     
     def make_Jacobian_v(self, vel: list):

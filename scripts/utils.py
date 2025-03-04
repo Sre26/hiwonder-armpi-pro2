@@ -379,7 +379,7 @@ class FiveDOFRobot:
         # calculate the jacobian for the desired EE velocity
         Jacobian_v = self.make_Jacobian_v(vel)
         
-        time_step = 0.01    # choose arbitrary timestep fro RRMC
+        time_step = 0.1    # choose arbitrary timestep fro RRMC
 
         # calc angular velocities for joints
         inv_Jv = np.linalg.pinv(Jacobian_v)

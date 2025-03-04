@@ -97,12 +97,18 @@ class HiwonderRobot:
         ######################################################################
         # insert your code for finding "thetalist_dot"
         bot = ut.FiveDOFRobot()
-
-        bot.theta = self.joint_values[:-1]
-        print(f"inverse jacobian: {bot.inverse_jacobian()}")
-        thetalist_dot = (bot.inverse_jacobian()) @ np.array(vel)
-
         thetalist_dot = [0]*5
+
+        
+        bot.theta = self.joint_values[:-1]
+        # print(f"inverse jacobian: {bot.inverse_jacobian()}")
+        jacobian_v = bot.make_Jacobian_v(vel)
+        inv_J = np.linalg.pinv(jacobian_v)
+        print(f"inverse jacobian: {inv_J}")
+
+        thetalist_dot = (inv_J) @ np.array(vel)
+
+        
 
         ######################################################################
 

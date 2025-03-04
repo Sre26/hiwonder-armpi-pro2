@@ -19,6 +19,9 @@ class GamepadControl:
         self.gamepad_cmds_prev = GamepadCmds()
         self.abs_x = self.abs_y = self.abs_z = self.abs_rz = 128  # Default centered values
 
+        # self.abs_x = 128
+        # self.abs_y = self.abs_z = -128
+
         # Control flags
         self.MOBILE_BASE_FLAG = False
         self.ARM_FLAG = False

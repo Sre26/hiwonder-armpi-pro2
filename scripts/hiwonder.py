@@ -10,7 +10,7 @@ import numpy as np
 from board_controller import BoardController
 from servo_bus_controller import ServoBusController
 import utils as ut
-from utils import FiveDOFRobot
+ # from utils import FiveDOFRobot
 
 # Robot base constants
 WHEEL_RADIUS = 0.047  # meters
@@ -22,7 +22,7 @@ class HiwonderRobot:
         """Initialize motor controllers, servo bus, and default robot states."""
         self.board = BoardController()
         self.servo_bus = ServoBusController()
-        self.fivedof = FiveDOFRobot()
+         # self.fivedof = FiveDOFRobot()
 
         self.joint_values = [0, 0, 90, -30, 0, 0]  # degrees
         self.home_position = [0, 0, 90, -30, 0, 0]  # degrees
@@ -73,7 +73,7 @@ class HiwonderRobot:
         """
         ######################################################################
         # insert your code for finding "speed"
-
+        
         speed = [0]*4
         
         ######################################################################
@@ -96,6 +96,11 @@ class HiwonderRobot:
 
         ######################################################################
         # insert your code for finding "thetalist_dot"
+        bot = ut.FiveDOFRobot()
+
+        bot.theta = self.joint_values[:-1]
+        print(f"inverse jacobian: {bot.inverse_jacobian()}")
+        thetalist_dot = (bot.inverse_jacobian()) @ np.array(vel)
 
         thetalist_dot = [0]*5
 
